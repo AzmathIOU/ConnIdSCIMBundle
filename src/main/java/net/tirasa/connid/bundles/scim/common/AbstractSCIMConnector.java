@@ -274,6 +274,8 @@ public abstract class AbstractSCIMConnector<
         }
     }
 
+    // Support for QueryParams, For now Only for Groups
+
     @Override
     public Uid create(
             final ObjectClass objectClass,
