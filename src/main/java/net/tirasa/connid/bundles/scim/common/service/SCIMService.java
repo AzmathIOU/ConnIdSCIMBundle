@@ -16,6 +16,7 @@
 package net.tirasa.connid.bundles.scim.common.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.tirasa.connid.bundles.scim.common.dto.PagedResults;
 import net.tirasa.connid.bundles.scim.common.dto.SCIMBaseMeta;
@@ -35,6 +36,8 @@ public interface SCIMService<UT extends SCIMUser<? extends SCIMBaseMeta, ? exten
 
     UT getUser(String userId);
 
+    UT getMeUser();
+
     List<UT> getAllUsers(String s, Set<String> attributesToGet);
 
     UT createUser(UT user);
@@ -49,11 +52,21 @@ public interface SCIMService<UT extends SCIMUser<? extends SCIMBaseMeta, ? exten
 
     PagedResults<GT> getAllGroups(Integer startIndex, Integer count);
 
+    PagedResults<GT> getAllGroups(Integer startIndex, Integer count, Map<String, String> queryParams);
+
     List<GT> getAllGroups();
+
+    List<GT> getAllGroups(Map<String, String> queryParams);
 
     GT getGroup(String groupId);
 
+    GT getGroup(String groupId, Map<String, String> queryParams);
+
     List<GT> getAllGroups(String filter);
+
+    List<GT> getAllGroups(String filter, Map<String, String> queryParams);
+
+    PagedResults<GT> getAllGroups(String filter, Integer startIndex, Integer count, Map<String, String> queryParams);
 
     GT createGroup(GT group);
 

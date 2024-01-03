@@ -76,6 +76,12 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
 
     protected WebClient getWebclient(final String path, final Map<String, String> params) {
         WebClient webClient;
+
+
+        if (path.equals("Me") && StringUtil.isBlank(config.getBearerToken())) {
+            SCIMUtils.handleGeneralError("Bearer token cannot be empty for /Me endpoint");
+        }
+
         if (checkBearerToken()) {
 
             webClient = WebClient.create(config.getBaseAddress()).
@@ -675,10 +681,54 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
     }
 
     @Override
+    public PagedResults<GT> getAllGroups(final Integer startIndex, final Integer count,
+                                         final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        params.put("startIndex", String.valueOf(startIndex));
+        if (count != null) {
+            params.put("count", String.valueOf(count));
+        }
+        params.putAll(queryParams);
+        WebClient webClient = getWebclient("Groups", params);
+        return doGetAllGroups(webClient);
+    }
+
+    @Override
     public List<GT> getAllGroups() {
         WebClient webClient = getWebclient("Groups", Collections.emptyMap());
         return doGetAllGroups(webClient).getResources();
     }
+
+
+    @Override
+    public List<GT> getAllGroups(final Map<String, String> queryParams) {
+        WebClient webClient = getWebclient("Groups", queryParams);
+        return doGetAllGroups(webClient).getResources();
+    }
+
+    @Override
+    public List<GT> getAllGroups(final String filterQuery, final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        params.put("filter", filterQuery);
+        params.putAll(queryParams);
+        WebClient webClient = getWebclient("Groups", params);
+        return doGetAllGroups(webClient).getResources();
+    }
+
+    @Override
+    public PagedResults<GT> getAllGroups(final String filterQuery, final Integer startIndex,
+                                         final Integer count, final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        params.put("filter", filterQuery);
+        params.putAll(queryParams);
+        params.put("startIndex", String.valueOf(startIndex));
+        if (count != null) {
+            params.put("count", String.valueOf(count));
+        }
+        WebClient webClient = getWebclient("Groups", params);
+        return doGetAllGroups(webClient);
+    }
+
 
     @Override
     public List<GT> getAllGroups(final String filterQuery) {
