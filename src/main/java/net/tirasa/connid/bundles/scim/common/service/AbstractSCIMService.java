@@ -559,6 +559,23 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
     }
 
     /**
+     * @param attributesToGet
+     * @param queryParams
+     * @return List of Users
+     */
+    @Override
+    public List<UT> getAllUsers(final Set<String> attributesToGet, final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        if (!attributesToGet.isEmpty()) {
+            params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
+                    SCIMv2Attribute.class));
+        }
+        params.putAll(queryParams);
+        WebClient webClient = getWebclient("Users", params);
+        return doGetAllUsers(webClient).getResources();
+    }
+
+    /**
      * @param filterQuery to filter results
      * @param attributesToGet
      * @return Filtered list of Users
@@ -571,6 +588,26 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
             params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
                     SCIMv2Attribute.class));
         }
+        WebClient webClient = getWebclient("Users", params);
+        return doGetAllUsers(webClient).getResources();
+    }
+
+    /**
+     * @param filterQuery to filter results
+     * @param attributesToGet
+     * @param queryParams
+     * @return Filtered list of Users
+     */
+    @Override
+    public List<UT> getAllUsers(final String filterQuery, final Set<String> attributesToGet,
+                       final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        params.put("filter", filterQuery);
+        if (!attributesToGet.isEmpty()) {
+            params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
+                    SCIMv2Attribute.class));
+        }
+        params.putAll(queryParams);
         WebClient webClient = getWebclient("Users", params);
         return doGetAllUsers(webClient).getResources();
     }
@@ -598,6 +635,30 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
     }
 
     /**
+     * @param startIndex
+     * @param count
+     * @param attributesToGet
+     * @param queryParams
+     * @return Paged list of Users
+     */
+    @Override
+    public PagedResults<UT> getAllUsers(final Integer startIndex, final Integer count,
+            final Set<String> attributesToGet, final Map<String, String> queryParams) {
+        Map<String, String> params = new HashMap<>();
+        params.put("startIndex", String.valueOf(startIndex));
+        if (count != null) {
+            params.put("count", String.valueOf(count));
+        }
+        if (!attributesToGet.isEmpty()) {
+            params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
+                    SCIMv2Attribute.class));
+        }
+        params.putAll(queryParams);
+        WebClient webClient = getWebclient("Users", params);
+        return doGetAllUsers(webClient);
+    }
+
+    /**
      * @param filterQuery
      * @param startIndex
      * @param count
@@ -615,6 +676,30 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
         params.put("filter", filterQuery);
         params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
                 SCIMv2Attribute.class));
+        WebClient webClient = getWebclient("Users", params);
+        return doGetAllUsers(webClient);
+    }
+
+    /**
+     * @param filterQuery
+     * @param startIndex
+     * @param count
+     * @param attributesToGet
+     * @param queryParams
+     * @return Paged and Filtered list of Users
+     */
+    public PagedResults<UT> getAllUsers(final String filterQuery, final Integer startIndex, final Integer count,
+            final Set<String> attributesToGet, final Map<String, String> queryParams) {
+
+        Map<String, String> params = new HashMap<>();
+        params.put("startIndex", String.valueOf(startIndex));
+        if (count != null) {
+            params.put("count", String.valueOf(count));
+        }
+        params.put("filter", filterQuery);
+        params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
+                SCIMv2Attribute.class));
+        params.putAll(queryParams);
         WebClient webClient = getWebclient("Users", params);
         return doGetAllUsers(webClient);
     }

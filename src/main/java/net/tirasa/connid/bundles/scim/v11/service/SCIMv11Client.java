@@ -55,6 +55,16 @@ public class SCIMv11Client extends AbstractSCIMService<
 
     /**
      * @param userId
+     * @param params
+     * @return User with userId id
+     */
+    @Override
+    public SCIMv11User getUser(final String userId, final Map<String, String> params) {
+        WebClient webClient = getWebclient("Users", params).path(userId);
+        return doGetUser(webClient, SCIMv11User.class, SCIMv11Attribute.class);
+    }
+
+    /**
      * @return User with userId id
      */
     @Override

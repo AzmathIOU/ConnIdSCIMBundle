@@ -32,13 +32,22 @@ public interface SCIMService<UT extends SCIMUser<? extends SCIMBaseMeta, ? exten
 
     PagedResults<UT> getAllUsers(Integer valueOf, Integer pagesSize, Set<String> attributesToGet);
 
+    PagedResults<UT> getAllUsers(Integer valueOf, Integer pagesSize, Set<String> attributesToGet,
+                         Map<String, String> queryParams);
+
     List<UT> getAllUsers(Set<String> attributesToGet);
 
+    List<UT> getAllUsers(Set<String> attributesToGet, Map<String, String> queryParams);
+
     UT getUser(String userId);
+
+    UT getUser(String userId, Map<String, String> queryParams);
 
     UT getMeUser();
 
     List<UT> getAllUsers(String s, Set<String> attributesToGet);
+
+    List<UT> getAllUsers(String s, Set<String> attributesToGet, Map<String, String> queryParams);
 
     UT createUser(UT user);
 

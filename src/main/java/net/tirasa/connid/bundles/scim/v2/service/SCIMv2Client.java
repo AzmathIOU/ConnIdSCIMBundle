@@ -52,6 +52,15 @@ public class SCIMv2Client extends AbstractSCIMService<SCIMv2User, SCIMv2Group, S
 
     /**
      * @param userId
+     * @param params
+     * @return User with userId id
+     */
+    @Override
+    public SCIMv2User getUser(final String userId, final Map<String, String> params) {
+        return doGetUser(getWebclient("Users", params).path(userId), SCIMv2User.class, SCIMv2Attribute.class);
+    }
+
+    /**
      * @return User with userId id
      */
     @Override
