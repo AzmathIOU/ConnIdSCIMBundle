@@ -47,7 +47,11 @@ import net.tirasa.connid.bundles.scim.common.utils.SCIMUtils;
 import net.tirasa.connid.bundles.scim.v11.dto.SCIMv11Attribute;
 import net.tirasa.connid.bundles.scim.v2.dto.SCIMv2Attribute;
 import net.tirasa.connid.bundles.scim.v2.dto.Type;
+import org.apache.cxf.configuration.security.ProxyAuthorizationPolicy;
 import org.apache.cxf.jaxrs.client.WebClient;
+import org.apache.cxf.transport.http.HTTPConduit;
+import org.apache.cxf.transports.http.configuration.HTTPClientPolicy;
+import org.apache.cxf.transports.http.configuration.ProxyServerType;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.SecurityUtil;
@@ -94,6 +98,32 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
                     null);
         }
 
+        if (StringUtil.isNotBlank(config.getProxyServerHost())) {
+            HTTPConduit conduit = WebClient.getConfig(webClient).getHttpConduit();
+
+            HTTPClientPolicy policy = new HTTPClientPolicy();
+            policy.setProxyServer(config.getProxyServerHost());
+            policy.setProxyServerPort(config.getProxyServerPort());
+            policy.setProxyServerType(ProxyServerType.valueOf(config.getProxyServerType().toUpperCase()));
+            conduit.setClient(policy);
+
+            if (StringUtil.isNotBlank(config.getProxyServerUser())
+                    && StringUtil.isNotBlank(config.getProxyServerPassword())) {
+                ProxyAuthorizationPolicy authorizationPolicy = new ProxyAuthorizationPolicy();
+                authorizationPolicy.setAuthorizationType("Basic");
+                authorizationPolicy.setUserName(config.getProxyServerUser());
+                authorizationPolicy.setPassword(config.getProxyServerPassword());
+                conduit.setProxyAuthorization(authorizationPolicy);
+            }
+        }
+
+        if (config.getFollowHttpRedirects()) {
+            HTTPConduit conduit = WebClient.getConfig(webClient).getHttpConduit();
+            final HTTPClientPolicy policy = conduit.getClient();
+            policy.setAutoRedirect(true);
+            conduit.setClient(policy);
+        }
+        
         webClient.type(config.getContentType()).accept(config.getAccept()).path(path);
 
         Optional.ofNullable(params).ifPresent(p -> p.forEach((k, v) -> webClient.query(k, v)));
@@ -362,11 +392,8 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
 
         ObjectNode newNode = SCIMUtils.MAPPER.createObjectNode();
         List<Object> values = user.getSCIMCustomAttributes().get(scimAttribute);
-        Object value = null;
 
-        if (!scimAttribute.getMultiValued()) {
-            value = values.get(0);
-        }
+        Object nodeValue = scimAttribute.getMultiValued() ? values : (values.isEmpty() ? null : values.get(0));
         String mainNodeKey = scimAttribute instanceof SCIMv2Attribute ? SCIMv2Attribute.class.cast(scimAttribute)
                 .getExtensionSchema() : SCIMv11Attribute.class.cast(scimAttribute).getSchema();
         String currentNodeKey = scimAttribute.getName();
@@ -377,14 +404,13 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
         } else {
             if (mainNodeKey.contains(SCIMAttributeUtils.SCIM_SCHEMA_EXTENSION)) {
                 if (rootNode.has(mainNodeKey)) {
-                    ((ObjectNode) rootNode.get(mainNodeKey)).putPOJO(currentNodeKey,
-                            values.size() > 1 ? values : values.get(0));
+                    ((ObjectNode) rootNode.get(mainNodeKey)).putPOJO(currentNodeKey, nodeValue);
                 } else {
-                    newNode.putPOJO(currentNodeKey, value == null ? values : value);
+                    newNode.putPOJO(currentNodeKey, nodeValue);
                     ((ObjectNode) rootNode).set(mainNodeKey, newNode);
                 }
             } else {
-                ((ObjectNode) rootNode).putPOJO(currentNodeKey, value == null ? values : value);
+                ((ObjectNode) rootNode).putPOJO(currentNodeKey, nodeValue);
             }
         }
     }

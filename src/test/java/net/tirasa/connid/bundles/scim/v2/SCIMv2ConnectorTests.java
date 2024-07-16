@@ -55,12 +55,14 @@ import net.tirasa.connid.bundles.scim.v2.dto.SCIMv2Group;
 import net.tirasa.connid.bundles.scim.v2.dto.SCIMv2User;
 import net.tirasa.connid.bundles.scim.v2.dto.Uniqueness;
 import net.tirasa.connid.bundles.scim.v2.service.SCIMv2Client;
+import org.apache.cxf.transports.http.configuration.ProxyServerType;
 import org.identityconnectors.common.StringUtil;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.api.APIConfiguration;
 import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.ConnectorFacadeFactory;
+import org.identityconnectors.framework.common.exceptions.ConfigurationException;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
@@ -219,7 +221,7 @@ public class SCIMv2ConnectorTests {
         // custom schemas
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_SCHEMAS, CUSTOM_OTHER_SCHEMAS));
 
-        // SCIM-1 add groups
+        // add groups
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_GROUPS, (Object[]) groups));
 
         Uid created = FACADE.create(ObjectClass.ACCOUNT, userAttrs, new OperationOptionsBuilder().build());
@@ -233,7 +235,7 @@ public class SCIMv2ConnectorTests {
     private static Uid updateUser(final Uid created, final String name, final String... groups) {
         Set<Attribute> userAttrs = updateUserAttributes(created, name);
 
-        // SCIM-1 change groups
+        // change groups
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_GROUPS, (Object[]) groups));
 
         Uid updated = FACADE.update(ObjectClass.ACCOUNT, created, userAttrs, new OperationOptionsBuilder().build());
@@ -248,7 +250,7 @@ public class SCIMv2ConnectorTests {
             final List<String> groupsToRemove) {
         Set<Attribute> userAttrs = updateUserAttributes(created, name);
 
-        // SCIM-1 change groups
+        // change groups
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_GROUPS_TO_ADD, groupsToAdd));
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_GROUPS_TO_REMOVE, groupsToRemove));
 
@@ -291,7 +293,6 @@ public class SCIMv2ConnectorTests {
         CUSTOM_OTHER_SCHEMAS.add(SCIMv2EnterpriseUser.SCHEMA_URI);
         userAttrs.add(AttributeBuilder.build(SCIMAttributeUtils.SCIM_USER_SCHEMAS, CUSTOM_OTHER_SCHEMAS));
 
-        // SCIM-3
         userAttrs.add(
                 AttributeBuilder.build("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User.employeeNumber",
                         "56789"));
@@ -378,7 +379,6 @@ public class SCIMv2ConnectorTests {
             }
             LOG.info("Found User using Connector search: {0}", found.get(0));
         }
-        // SCIM-3
         found.clear();
         FACADE.search(ObjectClass.ACCOUNT, new EqualsFilter(new Name(user.getUserName())), found::add,
                 new OperationOptionsBuilder().setAttributesToGet("name", "emails.work.value", "name.familyName",
@@ -461,7 +461,7 @@ public class SCIMv2ConnectorTests {
         user.setEnterpriseUser(enterpriseUser);
 
         SCIMv2User created = client.createUser(user);
-        // SCIM-1 group to user group1 = new SCIMv2Group.Builder()
+        // group to user group1 = new SCIMv2Group.Builder()
         created.getGroups().addAll(groups);
         assertNotNull(created);
         assertNotNull(created.getId());
@@ -743,6 +743,51 @@ public class SCIMv2ConnectorTests {
     }
 
     @Test
+    void validateWithProxyConfiguration() {
+        try {
+            // fail because port is null
+            CONF.setProxyServerHost("localhost");
+            CONF.setProxyServerUser("user");
+            CONF.setProxyServerPassword("password");
+            try {
+                newFacade().validate();
+                fail();
+            } catch (Exception e) {
+                assertTrue(e instanceof ConfigurationException);
+                assertTrue(e.getMessage()
+                        .contains("Proxy server type and port cannot be null or empty if host is specified."));
+            }
+            // fail because proxy server type is wrong
+            CONF.setProxyServerHost("localhost");
+            CONF.setProxyServerPort(8080);
+            CONF.setProxyServerType("WRONG");
+            try {
+                newFacade().validate();
+                fail();
+            } catch (Exception e) {
+                assertTrue(e instanceof ConfigurationException);
+                assertTrue(e.getMessage()
+                        .contains("Unsupported proxy Server type: WRONG"));
+            }
+            // fix proxy server type
+            CONF.setProxyServerType(ProxyServerType.HTTP.value());
+            CONF.setProxyServerUser("user");
+            CONF.setProxyServerPassword(null);
+            try {
+                newFacade().validate();
+                fail();
+            } catch (Exception e) {
+                assertTrue(e instanceof ConfigurationException);
+                assertTrue(e.getMessage()
+                        .contains("Proxy server password cannot be null or empty if user is specified."));
+            }
+        } finally {
+            // cleanup not to invalidate other tests
+            CONF.setProxyServerHost(null);
+        }
+    }
+    
+    @Test
     public void validate() {
         FACADE.validate();
     }
@@ -871,7 +916,7 @@ public class SCIMv2ConnectorTests {
         String testUser;
         String testGroup1;
         try {
-            // SCIM-1 create group
+            // create group
             Uid group1 = createGroup(UUID.randomUUID(), "group1");
             Uid group2 = createGroup(UUID.randomUUID(), "group2");
             Uid group3 = createGroup(UUID.randomUUID(), "group3");
@@ -888,7 +933,7 @@ public class SCIMv2ConnectorTests {
 
             SCIMv2User createdUser = readUser(testUser, client);
             assertEquals(createdUser.getId(), created.getUidValue());
-            // SCIM-1 check groups
+            // check groups
             assertFalse(createdUser.getGroups().isEmpty());
             assertEquals(2, createdUser.getGroups().size());
             Optional<BaseResourceReference> groupRef1 =
@@ -905,7 +950,7 @@ public class SCIMv2ConnectorTests {
             assertTrue(groupRef2.isPresent());
             assertEquals(createdGroup2.getDisplayName(), groupRef2.get().getDisplay());
             assertTrue(groupRef2.get().getRef().contains("/Groups/" + createdGroup2.getId()));
-            // SCIM-8 check entitlements
+            // check entitlements
             assertTrue(createdUser.getEntitlements().stream().allMatch(e -> "00e09000000iZP5AAM".equals(e.getValue())));
             // read user through connector APIs
             ConnectorObject createdConnObj = FACADE.getObject(ObjectClass.ACCOUNT, created,
@@ -927,7 +972,7 @@ public class SCIMv2ConnectorTests {
             LOG.info("Updated user: {0}", updatedUser);
             assertNull(updatedUser.getPassword()); // password won't be retrieved from API
 
-            // SCIM-1 check group update, remove group2, keep group1 and add group3
+            // check group update, remove group2, keep group1 and add group3
             assertEquals(2, updatedUser.getGroups().size());
             assertTrue(updatedUser.getGroups().stream().anyMatch(g -> g.getValue().equals(createdGroup1.getId())));
             assertTrue(updatedUser.getGroups().stream().anyMatch(g -> g.getValue().equals(createdGroup3.getId())));
@@ -1038,7 +1083,7 @@ public class SCIMv2ConnectorTests {
         SCIMv2Client client = newClient();
 
         try {
-            // SCIM-1 create group
+            // create group
             Uid group1 = createGroup(UUID.randomUUID(), StringUtil.EMPTY);
 
             SCIMv2Group createdGroup = readGroup(group1.getUidValue(), client);
