@@ -43,8 +43,6 @@ import net.tirasa.connid.bundles.scim.common.dto.SCIMGenericComplex;
 import net.tirasa.connid.bundles.scim.common.dto.SCIMUserAddress;
 import net.tirasa.connid.bundles.scim.common.service.NoSuchEntityException;
 import net.tirasa.connid.bundles.scim.common.types.AddressCanonicalType;
-import net.tirasa.connid.bundles.scim.common.types.EmailCanonicalType;
-import net.tirasa.connid.bundles.scim.common.types.PhoneNumberCanonicalType;
 import net.tirasa.connid.bundles.scim.common.utils.SCIMAttributeUtils;
 import net.tirasa.connid.bundles.scim.v11.dto.SCIMUserName;
 import net.tirasa.connid.bundles.scim.v2.dto.Mutability;
@@ -348,6 +346,9 @@ public class SCIMv2ConnectorTests {
         // USER TO ATTRIBUTES
         Set<Attribute> toAttributes = user.toAttributes(user.getClass(), CONF);
         LOG.info("User to attributes: {0}", toAttributes);
+        for (Attribute a: toAttributes) {
+             LOG.info("Attribute is : ", a);
+        }
         assertTrue(SCIMv2ConnectorTestsUtils.hasAttribute(toAttributes,
                 SCIMv2ConnectorTestsUtils.USER_ATTRIBUTE_FAMILY_NAME));
         assertTrue(SCIMv2ConnectorTestsUtils.hasAttribute(toAttributes,
@@ -415,14 +416,14 @@ public class SCIMv2ConnectorTests {
         user.setName(new SCIMUserName());
         user.getName().setFamilyName(SCIMv2ConnectorTestsUtils.VALUE_FAMILY_NAME);
         user.getName().setGivenName(SCIMv2ConnectorTestsUtils.VALUE_GIVEN_NAME);
-        SCIMGenericComplex<EmailCanonicalType> email = new SCIMGenericComplex<>();
+        SCIMGenericComplex<String> email = new SCIMGenericComplex<>();
         email.setPrimary(true);
-        email.setType(EmailCanonicalType.work);
+        email.setType("work");
         email.setValue(name);
         user.getEmails().add(email);
-        SCIMGenericComplex<PhoneNumberCanonicalType> phone = new SCIMGenericComplex<>();
+        SCIMGenericComplex<String> phone = new SCIMGenericComplex<>();
         phone.setPrimary(false);
-        phone.setType(PhoneNumberCanonicalType.other);
+        phone.setType("other");
         phone.setValue(SCIMv2ConnectorTestsUtils.VALUE_PHONE_NUMBER);
         user.getPhoneNumbers().add(phone);
         SCIMUserAddress userAddress = new SCIMUserAddress();
@@ -495,8 +496,8 @@ public class SCIMv2ConnectorTests {
         user.getName().setGivenName(newGivenName);
 
         // want also to remove attributes
-        for (SCIMGenericComplex<PhoneNumberCanonicalType> phone : user.getPhoneNumbers()) {
-            if (phone.getType().equals(PhoneNumberCanonicalType.other)) {
+        for (SCIMGenericComplex<String> phone : user.getPhoneNumbers()) {
+            if (phone.getType().equalsIgnoreCase("other")) {
                 // Note that "value" and "primary" must also be the same of current attribute in order to proceed
                 // with deletion
                 // See http://www.simplecloud.info/specs/draft-scim-api-01.html#edit-resource-with-patch
@@ -516,8 +517,8 @@ public class SCIMv2ConnectorTests {
         LOG.info("Updated User with PATCH: {0}", updated);
 
         // test removed attribute
-        for (SCIMGenericComplex<PhoneNumberCanonicalType> phone : updated.getPhoneNumbers()) {
-            assertEquals(PhoneNumberCanonicalType.other, phone.getType());
+        for (SCIMGenericComplex<String> phone : updated.getPhoneNumbers()) {
+            assertEquals("other", phone.getType());
         }
 
         return updated;
@@ -980,13 +981,13 @@ public class SCIMv2ConnectorTests {
             // test removed attribute
             SCIMv2User user = client.getUser(updatedUser.getId());
             assertNotNull(user);
-            assertTrue(user.getPhoneNumbers().stream().noneMatch(pn -> PhoneNumberCanonicalType.other == pn.getType()));
+            assertTrue(user.getPhoneNumbers().stream().noneMatch(pn -> pn.getType().equalsIgnoreCase("other")));
             assertTrue(user.getPhoneNumbers().stream().anyMatch(
-                    pn -> PhoneNumberCanonicalType.home == pn.getType() && pn.isPrimary() && "123456789".equals(
+                    pn -> pn.getType().equalsIgnoreCase("home") && pn.isPrimary() && "123456789".equals(
                     pn.getValue())));
 
             assertTrue(user.getEmails().stream().anyMatch(
-                    email -> EmailCanonicalType.work == email.getType() && ("updated"
+                    email -> email.getType().equalsIgnoreCase("work") && ("updated"
                     + updatedUser.getUserName()).equals(email.getValue())));
 
             // check delete user

@@ -53,6 +53,11 @@ public class SCIMGenericComplex<T extends Serializable> extends AbstractSCIMComp
             return this;
         }
 
+        public Builder<T> verified(final Boolean verified) {
+            instance.setVerified(verified);
+            return this;
+        }
+
         public Builder<T> operation(final String operation) {
             instance.setOperation(operation);
             return this;
@@ -71,6 +76,9 @@ public class SCIMGenericComplex<T extends Serializable> extends AbstractSCIMComp
 
     @JsonProperty
     private Boolean primary;
+
+    @JsonProperty
+    private Boolean verified;
 
     @JsonProperty
     private String operation;
@@ -103,6 +111,14 @@ public class SCIMGenericComplex<T extends Serializable> extends AbstractSCIMComp
         this.primary = primary;
     }
 
+    public Boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(final Boolean verified) {
+        this.verified = verified;
+    }
+
     public void setOperation(final String operation) {
         this.operation = operation;
     }
@@ -132,6 +148,7 @@ public class SCIMGenericComplex<T extends Serializable> extends AbstractSCIMComp
                 + "display=" + display
                 + ", type=" + type
                 + ", primary=" + primary
+                + ", verified=" + verified
                 + ", operation=" + operation
                 + ", value=" + value
                 + '}';
