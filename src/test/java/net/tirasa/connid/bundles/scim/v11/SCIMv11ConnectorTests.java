@@ -40,8 +40,6 @@ import net.tirasa.connid.bundles.scim.common.dto.SCIMGenericComplex;
 import net.tirasa.connid.bundles.scim.common.dto.SCIMUserAddress;
 import net.tirasa.connid.bundles.scim.common.service.NoSuchEntityException;
 import net.tirasa.connid.bundles.scim.common.types.AddressCanonicalType;
-import net.tirasa.connid.bundles.scim.common.types.EmailCanonicalType;
-import net.tirasa.connid.bundles.scim.common.types.PhoneNumberCanonicalType;
 import net.tirasa.connid.bundles.scim.common.utils.SCIMAttributeUtils;
 import net.tirasa.connid.bundles.scim.v11.dto.SCIMUserName;
 import net.tirasa.connid.bundles.scim.v11.dto.SCIMv11User;
@@ -214,14 +212,14 @@ public class SCIMv11ConnectorTests {
         user.setName(new SCIMUserName());
         user.getName().setFamilyName(SCIMv11ConnectorTestsUtils.VALUE_FAMILY_NAME);
         user.getName().setGivenName(SCIMv11ConnectorTestsUtils.VALUE_GIVEN_NAME);
-        SCIMGenericComplex<EmailCanonicalType> email = new SCIMGenericComplex<>();
+        SCIMGenericComplex<String> email = new SCIMGenericComplex<>();
         email.setPrimary(true);
-        email.setType(EmailCanonicalType.work);
+        email.setType("work");
         email.setValue(name);
         user.getEmails().add(email);
-        SCIMGenericComplex<PhoneNumberCanonicalType> phone = new SCIMGenericComplex<>();
+        SCIMGenericComplex<String> phone = new SCIMGenericComplex<>();
         phone.setPrimary(false);
-        phone.setType(PhoneNumberCanonicalType.other);
+        phone.setType("other");
         phone.setValue(SCIMv11ConnectorTestsUtils.VALUE_PHONE_NUMBER);
         user.getPhoneNumbers().add(phone);
         SCIMUserAddress userAddress = new SCIMUserAddress();
@@ -260,8 +258,8 @@ public class SCIMv11ConnectorTests {
         user.getName().setGivenName(newGivenName);
 
         // want also to remove attributes
-        for (SCIMGenericComplex<PhoneNumberCanonicalType> phone : user.getPhoneNumbers()) {
-            if (phone.getType().equals(PhoneNumberCanonicalType.other)) {
+        for (SCIMGenericComplex<String> phone : user.getPhoneNumbers()) {
+            if (phone.getType().equalsIgnoreCase("other")) {
                 // Note that "value" and "primary" must also be the same of current attribute in order to proceed with
                 // deletion
                 // See http://www.simplecloud.info/specs/draft-scim-api-01.html#edit-resource-with-patch
@@ -282,8 +280,8 @@ public class SCIMv11ConnectorTests {
         LOG.info("Updated User with PATCH: {0}", updated);
 
         // test removed attribute
-        for (SCIMGenericComplex<PhoneNumberCanonicalType> phone : updated.getPhoneNumbers()) {
-            assertNotEquals(phone.getType(), PhoneNumberCanonicalType.other);
+        for (SCIMGenericComplex<String> phone : updated.getPhoneNumbers()) {
+            assertNotEquals(phone.getType(), "other");
         }
 
         return updated;
@@ -655,12 +653,12 @@ public class SCIMv11ConnectorTests {
             // test removed attribute
             SCIMv11User user = client.getUser(updatedUser.getId());
             assertNotNull(user);
-            for (SCIMGenericComplex<PhoneNumberCanonicalType> phone : user.getPhoneNumbers()) {
-                assertNotEquals(phone.getType(), PhoneNumberCanonicalType.other);
+            for (SCIMGenericComplex<String> phone : user.getPhoneNumbers()) {
+                assertNotEquals(phone.getType(), "other");
             }
-            for (SCIMGenericComplex<EmailCanonicalType> email : user.getEmails()) {
-                assertNotEquals(email.getType(), EmailCanonicalType.other);
-                assertNotEquals(email.getType(), EmailCanonicalType.home);
+            for (SCIMGenericComplex<String> email : user.getEmails()) {
+                assertNotEquals(email.getType(), "other");
+                assertNotEquals(email.getType(), "home");
             }
             assertTrue(user.getPhoneNumbers().isEmpty());
         } catch (Exception e) {
