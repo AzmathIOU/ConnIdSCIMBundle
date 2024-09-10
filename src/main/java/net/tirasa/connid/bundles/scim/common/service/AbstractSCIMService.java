@@ -576,7 +576,7 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
     @Override
     public List<UT> getAllUsers(final Set<String> attributesToGet) {
         Map<String, String> params = new HashMap<>();
-        if (!attributesToGet.isEmpty()) {
+        if (!attributesToGet.isEmpty() && config.getRequestAttributesOnSearch()) {
             params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
                     SCIMv2Attribute.class));
         }
@@ -610,7 +610,7 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
     public List<UT> getAllUsers(final String filterQuery, final Set<String> attributesToGet) {
         Map<String, String> params = new HashMap<>();
         params.put("filter", filterQuery);
-        if (!attributesToGet.isEmpty()) {
+        if (!attributesToGet.isEmpty() && config.getRequestAttributesOnSearch()) {
             params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
                     SCIMv2Attribute.class));
         }
@@ -652,7 +652,7 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
         if (count != null) {
             params.put("count", String.valueOf(count));
         }
-        if (!attributesToGet.isEmpty()) {
+        if (!attributesToGet.isEmpty() && config.getRequestAttributesOnSearch()) {
             params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
                     SCIMv2Attribute.class));
         }
@@ -700,8 +700,12 @@ public abstract class AbstractSCIMService<UT extends SCIMUser<
             params.put("count", String.valueOf(count));
         }
         params.put("filter", filterQuery);
-        params.put("attributes", SCIMUtils.cleanAttributesToGet(attributesToGet, config.getCustomAttributesJSON(),
-                SCIMv2Attribute.class));
+        if (!attributesToGet.isEmpty() && config.getRequestAttributesOnSearch()) {
+            params.put("attributes",
+                    SCIMUtils.cleanAttributesToGet(attributesToGet,
+                            config.getCustomAttributesJSON(),
+                            SCIMv2Attribute.class));
+        }
         WebClient webClient = getWebclient("Users", params);
         return doGetAllUsers(webClient);
     }
